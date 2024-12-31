@@ -1,0 +1,7 @@
+node_modules/
+.env
+.ENV
+.DS_Store
+*.log
+joy_service_account.json.env
+.env
