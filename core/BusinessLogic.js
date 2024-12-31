@@ -13,6 +13,12 @@ class BusinessLogic {
     console.log('DeepSeekService instancié:', this.deepSeekService); // Log de l'instanciation
     this.state = StateManager;
   }
+  
+  async initializeServices() {
+    console.log('🔧 Initialisation des services...');
+    await GoogleSheetsService.init(); // Ensure GoogleSheetsService is initialized
+    console.log('✅ Services initialisés');
+  }
 
   // Méthode pour vérifier les champs requis
   checkRequiredFields(analysis) {
@@ -99,13 +105,17 @@ class BusinessLogic {
   async executeDelivery(analysis) {
     console.log('📝 Mise à jour de Google Sheets...');
     try {
-      await GoogleSheetsService.addRow('livraisons', {
-        ID_Livraison: analysis.deliveryId,
-        Date_Livraison: new Date().toISOString(),
-        ID_Client: analysis.clientId,
-        Total_livraison: analysis.total,
-        Statut_L: 'Livrée'
-      });
+      // Assuming analysis.products is an array of products with their quantities
+      for (const product of analysis.products) {
+        await GoogleSheetsService.addRow('livraisons', {
+          ID_Livraison: analysis.deliveryId,
+          Date_Livraison: new Date().toISOString(),
+          ID_Client: analysis.clientId,
+          Produit: product.name,
+          Quantite: product.quantity,
+          Statut_L: 'Livrée'
+        });
+      }
       console.log('✅ Google Sheets mis à jour avec succès'); // Log en cas de succès
     } catch (error) {
       console.error('❌ Erreur lors de la mise à jour de Google Sheets:', error); // Log en cas d'erreur
