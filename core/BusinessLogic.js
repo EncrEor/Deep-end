@@ -16,7 +16,22 @@ class BusinessLogic {
   
   async initializeServices() {
     console.log('🔧 Initialisation des services...');
-    await GoogleSheetsService.init(); // Ensure GoogleSheetsService is initialized
+  
+    // 1. On initialise la connexion Google
+    await GoogleSheetsService.init(); 
+  
+    // 2. On initialise la liste des clients
+    const ClientsService = require('../services/ClientsService');
+    await ClientsService.initialize();
+  
+    // 3. On initialise la liste des produits
+    const ProductsService = require('../services/ProductsService');
+    await ProductsService.initialize();
+  
+    // 4. On initialise les abréviations (clients + produits)
+    const AbbreviationsService = require('../services/AbbreviationsService');
+    await AbbreviationsService.initialize();
+  
     console.log('✅ Services initialisés');
   }
 
