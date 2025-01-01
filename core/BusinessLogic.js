@@ -25,16 +25,16 @@ class BusinessLogic {
     await AbbreviationsService.initialize();
   }
 
-  // Méthode pour vérifier les champs requis
   checkRequiredFields(analysis) {
     console.log('🔍 Vérification des champs requis dans l\'analyse:', analysis);
-    const requiredFields = ['type', 'client', 'produits', 'quantites'];
+    if (analysis.type === 'info') return true;
+    
+    const requiredFields = ['type', 'client', 'products'];
     const isValid = requiredFields.every(field => analysis[field] !== undefined && analysis[field] !== null);
     console.log('✅ Résultat de la vérification des champs requis:', isValid);
     return isValid;
   }
 
-  // Méthode pour valider le stock
   validateStock(products) {
     console.log('🔍 Validation du stock pour les produits:', products);
     const isValid = true;
@@ -42,7 +42,6 @@ class BusinessLogic {
     return isValid;
   }
 
-  // Méthode pour valider le client
   validateClient(client) {
     console.log('🔍 Validation du client:', client);
     const isValid = true;
@@ -50,7 +49,6 @@ class BusinessLogic {
     return isValid;
   }
 
-  // Méthode pour gérer les erreurs de validation
   handleValidationError(analysis) {
     const errorDetails = `Validation failed for analysis: ${JSON.stringify(analysis)}`;
     console.error('❌ Erreur de validation:', errorDetails);
@@ -77,16 +75,18 @@ class BusinessLogic {
       const result = await this.executeDelivery(analysis);
       console.log('✅ Livraison exécutée:', result);
 
-      console.log('🔄 Mise à jour de l\'état...');
-      this.state.updateState({
-        current: {
-          delivery: result.data,
-          client: {
-            id: result.data.client,
-            name: result.data.clientName
+      if (result.status === 'success') {
+        console.log('🔄 Mise à jour de l\'état...');
+        this.state.updateState({
+          current: {
+            delivery: result.data,
+            client: {
+              id: result.data.client,
+              name: result.data.clientName
+            }
           }
-        }
-      });
+        });
+      }
 
       return result;
     } catch (error) {
@@ -96,17 +96,14 @@ class BusinessLogic {
   }
 
   validateDeliveryRequest(analysis) {
-    if (Array.isArray(analysis) && analysis.length > 0) {
+    if (analysis.type === 'info') return true;
+
+    if (Array.isArray(analysis)) {
       return analysis.every(order =>
         order.client &&
-        order.products &&
         Array.isArray(order.products) &&
         order.products.length > 0
       );
-    }
-
-    if (typeof analysis === 'string') {
-      return true;
     }
 
     return this.checkRequiredFields(analysis) &&
@@ -116,53 +113,70 @@ class BusinessLogic {
 
   async executeDelivery(analysis) {
     try {
-      const order = Array.isArray(analysis) ? analysis[0] : analysis;
-      let total = 0;
-  
-      const productInfo = await GoogleSheetsService.getRows('produits');
-      console.log('📦 Données produits récupérées:', productInfo);
-  
-      for (const product of order.products) {
-        const productData = productInfo.find(p => p.ID_Produit === product.productId);
-        if (!productData) {
-          console.warn(`❌ Produit non trouvé: ${product.productId}`);
-          continue;
-        }
-  
-        console.log('📊 Données produit trouvées:', productData);
-        const unitPrice = parseFloat(productData.Prix_Unitaire.replace(',', '.')) || 0;
-        const itemTotal = unitPrice * product.quantity;
-        total += itemTotal;
-  
-        console.log(`💰 Prix unitaire pour ${product.productId}: ${unitPrice}`);
-  
-        await GoogleSheetsService.addRow('livraisons', {
-          ID_Livraison: order.deliveryId,
-          Date_Livraison: new Date().toISOString(),
-          ID_Client: order.client.id,
-          Produit: product.productId,
-          Quantite: product.quantity,
-          Prix_Unitaire: unitPrice,
-          Total: itemTotal,
-          Statut_L: 'Livrée'
-        });
+      if (analysis.type === 'info') {
+        return {
+          status: 'info',
+          message: analysis.message
+        };
       }
-  
-      return {
-        status: 'success',
-        message: `Livraison ${order.deliveryId} créée pour ${order.client.name}\nTotal: ${total.toFixed(3)} TND`,
-        data: {
-          delivery: order.deliveryId,
+
+      const orders = Array.isArray(analysis) ? analysis : [analysis];
+      let total = 0;
+      const results = [];
+
+      const productInfo = await GoogleSheetsService.getRows('produits');
+      
+      for (const order of orders) {
+        for (const product of order.products) {
+          const productData = productInfo.find(p => p.ID_Produit === product.productId);
+          if (!productData) {
+            console.warn(`❌ Produit non trouvé: ${product.productId}`);
+            continue;
+          }
+
+          const unitPrice = parseFloat(productData.Prix_Unitaire.replace(',', '.')) || 0;
+          const itemTotal = unitPrice * product.quantity;
+          total += itemTotal;
+
+          await GoogleSheetsService.addRow('livraisons', {
+            ID_Livraison: order.deliveryId,
+            Date_Livraison: new Date().toISOString(),
+            ID_Client: order.client.id,
+            Produit: product.productId,
+            Quantite: product.quantity,
+            Prix_Unitaire: unitPrice,
+            Total: itemTotal,
+            Statut_L: order.type === 'return' ? 'Retour' : 'Livrée',
+            Type: order.type
+          });
+        }
+
+        results.push({
+          deliveryId: order.deliveryId,
           client: order.client.id,
           clientName: order.client.name,
           products: order.products,
-          total
-        }
+          total,
+          type: order.type
+        });
+      }
+
+      return {
+        status: 'success',
+        message: this.formatDeliveryMessage(results),
+        data: results.length === 1 ? results[0] : results
       };
     } catch (error) {
       console.error('❌ Erreur GoogleSheets:', error);
       throw error;
     }
+  }
+
+  formatDeliveryMessage(results) {
+    return results.map(result => 
+      `${result.type === 'return' ? 'Retour' : 'Livraison'} ${result.deliveryId} ` +
+      `créée pour ${result.clientName}\nTotal: ${result.total.toFixed(3)} TND`
+    ).join('\n');
   }
 }
 

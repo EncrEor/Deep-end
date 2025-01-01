@@ -13,7 +13,6 @@ class DeepSeekService {
   async processMessage(message, context = {}) {
     console.log('🔍 Traitement du message via DeepSeek:', message);
     try {
-        // Garder l'initialisation
         if (!this.clientsService.clients?.length) {
             await this.clientsService.initialize();
         }
@@ -23,19 +22,26 @@ class DeepSeekService {
 
         const parsedData = await this.messageParser.parseMessage(message);
         if (parsedData?.length > 0) {
-            // Enrichir chaque ordre de livraison
             return parsedData.map(order => ({
                 ...order,
-                type: 'delivery',
+                type: order.type || 'delivery',
                 deliveryId: this.generateDeliveryId()
             }));
         }
-        return this.handleGeneralMessage(message);
+        
+        const response = this.handleGeneralMessage(message);
+        return {
+            type: 'info',
+            produits: [],
+            quantites: [],
+            deliveryId: this.generateDeliveryId(),
+            message: response
+        };
     } catch (error) {
         console.error('❌ Erreur traitement:', error);
         throw error;
     }
-}
+  }
   
   enrichParsedData(parsedData) {
     const enrichedData = {
@@ -77,7 +83,6 @@ class DeepSeekService {
 
   handleGeneralMessage(message) {
     console.log('🔍 Message général détecté:', message);
-    // Provide a meaningful response without throwing an error
     return `Message reçu: "${message}". Veuillez fournir des détails de livraison si nécessaire.`;
   }
 
@@ -86,4 +91,4 @@ class DeepSeekService {
   }
 }
 
-module.exports = DeepSeekService; // Export the class itself
+module.exports = DeepSeekService;

@@ -109,7 +109,7 @@ async initialize() {
         AbbreviationsService.clientsMap.set(key, clientData);
 
         // On log pour debug
-        console.log(`   🟦 [ClientsService] Ajout abréviation "${key}" ->`, clientData);
+        //console.log(`   🟦 [ClientsService] Ajout abréviation "${key}" ->`, clientData);
       });
     });
 

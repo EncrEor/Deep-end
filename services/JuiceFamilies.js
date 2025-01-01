@@ -1,27 +1,59 @@
 /**
  * JuiceFamilies.js
- * ----------------
- * Mappe les abréviations de jus ("mj", "f", "red", "cl"...)
- * vers un objet { familyCode, label }, ex: { familyCode: "M", label: "Mojito" }
- * 
- * Ensuite, pour obtenir l'ID final (ex: M1L, M25CL, M1LS), 
- * on assemblera "familyCode + format + (S si surgelé)".
+ * Mappe les abréviations de jus vers leur code famille et label
  */
-
 module.exports = {
-    // abréviation => { familyCode, label }
-    mj:  { familyCode: "M", label: "Mojito" },
-    m:   { familyCode: "M", label: "Mojito" },
-    f:   { familyCode: "F", label: "Fraise" },
-    fr:  { familyCode: "F", label: "Fraise" },
-    red: { familyCode: "R", label: "Red Citrus" },
-    c:   { familyCode: "C", label: "Citron" },
-    cl:  { familyCode: "CL", label: "Cool" },
-    mg:  { familyCode: "MG", label: "Mangue" },
-    as:  { familyCode: "AS", label: "Ananas" },
-    kw:  { familyCode: "KW", label: "Kiwi" },
-    y:   { familyCode: "Y", label: "Youppi" },
-    ss:  { familyCode: "SS", label: "Sunshine" },
-    pl:  { familyCode: "PL", label: "Peach Love" },
-    gw:  { familyCode: "GW", label: "Green Wave" }
-  };
+  // Citron
+  c: { familyCode: "C", label: "Citron" },
+  citron: { familyCode: "C", label: "Citron" },
+  cit: { familyCode: "C", label: "Citron" },
+
+  // Mojito
+  mj: { familyCode: "M", label: "Mojito" },
+  m: { familyCode: "M", label: "Mojito" },
+  mojito: { familyCode: "M", label: "Mojito" },
+
+  // Fraise
+  f: { familyCode: "F", label: "Fraise" },
+  fr: { familyCode: "F", label: "Fraise" },
+  fraise: { familyCode: "F", label: "Fraise" },
+
+  // Red Citrus
+  r: { familyCode: "R", label: "Red Citrus" },
+  red: { familyCode: "R", label: "Red Citrus" },
+  réd: { familyCode: "R", label: "Red Citrus" },
+  redcitrus: { familyCode: "R", label: "Red Citrus" },
+
+  // Cool
+  cl: { familyCode: "CL", label: "Cool" },
+  cool: { familyCode: "CL", label: "Cool" },
+
+  // Mangue
+  mg: { familyCode: "MG", label: "Mangue" },
+  mangue: { familyCode: "MG", label: "Mangue" },
+  
+  // Ananas
+  as: { familyCode: "AS", label: "Ananas" },
+  ananas: { familyCode: "AS", label: "Ananas" },
+  
+  // Kiwi
+  kw: { familyCode: "KW", label: "Kiwi" },
+  kiwi: { familyCode: "KW", label: "Kiwi" },
+  
+  // Youppi
+  y: { familyCode: "Y", label: "Youppi" },
+  youppi: { familyCode: "Y", label: "Youppi" },
+  
+  // Sunshine
+  ss: { familyCode: "SS", label: "Sunshine" },
+  sunshine: { familyCode: "SS", label: "Sunshine" },
+  
+  // Peach Love
+  pl: { familyCode: "PL", label: "Peach Love" },
+  peach: { familyCode: "PL", label: "Peach Love" },
+  
+  // Green Wave
+  gw: { familyCode: "GW", label: "Green Wave" },
+  green: { familyCode: "GW", label: "Green Wave" },
+  wave: { familyCode: "GW", label: "Green Wave" }
+};

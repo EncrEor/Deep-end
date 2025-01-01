@@ -43,7 +43,7 @@ class AbbreviationsService {
     // rows contiendra un tableau d'objets, par ex:
     // [ { ID_Client: "C00013", Nom_Client: "Boulangerie Aziz (Mileha)", AB1: "Aziz", AB2: "", ...}, ...]
     const rows = await GoogleSheetsService.getRows('abrev.clients');
-    console.log(`🟩 [AbbreviationsService] Nombre de lignes abrev.clients: ${rows.length}`);
+    //console.log(`🟩 [AbbreviationsService] Nombre de lignes abrev.clients: ${rows.length}`);
 
     rows.forEach((row, index) => {
       const idClient = row.ID_Client || '';      // "C00013"
@@ -62,7 +62,7 @@ class AbbreviationsService {
       abList.forEach(ab => {
         const key = ab.toLowerCase().trim();
         this.clientsMap.set(key, clientData);
-        console.log(`    🟩 Ajout abrév="${key}" -> ID=${idClient}`);
+        //console.log(`    🟩 Ajout abrév="${key}" -> ID=${idClient}`);
       });
     });
 
@@ -83,7 +83,7 @@ class AbbreviationsService {
 
     // 2. Récupère les lignes
     const rows = await GoogleSheetsService.getRows('abrev.produits');
-    console.log(`🟩 [AbbreviationsService] Nombre de lignes "abrev.produits": ${rows.length}`, rows);
+    //console.log(`🟩 [AbbreviationsService] Nombre de lignes "abrev.produits": ${rows.length}`, rows);
 
     // 3. On itère
     rows.forEach((row, index) => {
