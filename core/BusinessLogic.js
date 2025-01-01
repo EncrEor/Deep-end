@@ -1,66 +1,52 @@
 const EventBus = require('./EventBus');
 const StateManager = require('./StateManager');
 const GoogleSheetsService = require('../services/GoogleSheetsService');
-const DeepSeekService = require('./DeepSeekService'); // Importation correcte
+const DeepSeekService = require('./DeepSeekService');
+const ProductsService = require('../services/ProductsService');
 
-console.log('DeepSeekService importé:', DeepSeekService); // Log pour vérifier l'importation
+console.log('DeepSeekService importé:', DeepSeekService);
 
 class BusinessLogic {
   constructor() {
-    console.log('Initialisation de BusinessLogic...'); // Log d'initialisation
-    console.log('DeepSeekService:', DeepSeekService); // Ajoute ce log
-    this.deepSeekService = new DeepSeekService(); // Utilisation correcte
-    console.log('DeepSeekService instancié:', this.deepSeekService); // Log de l'instanciation
+    console.log('Initialisation de BusinessLogic...');
+    console.log('DeepSeekService:', DeepSeekService);
+    this.deepSeekService = new DeepSeekService();
+    console.log('DeepSeekService instancié:', this.deepSeekService);
     this.state = StateManager;
+    this.productsService = ProductsService;
   }
-  
+
   async initializeServices() {
-    console.log('🔧 Initialisation des services...');
-  
-    // 1. On initialise la connexion Google
-    await GoogleSheetsService.init(); 
-  
-    // 2. On initialise la liste des clients
+    await GoogleSheetsService.init();
+    await this.productsService.initialize();
     const ClientsService = require('../services/ClientsService');
     await ClientsService.initialize();
-  
-    // 3. On initialise la liste des produits
-    const ProductsService = require('../services/ProductsService');
-    await ProductsService.initialize();
-  
-    // 4. On initialise les abréviations (clients + produits)
     const AbbreviationsService = require('../services/AbbreviationsService');
     await AbbreviationsService.initialize();
-  
-    console.log('✅ Services initialisés');
   }
 
   // Méthode pour vérifier les champs requis
   checkRequiredFields(analysis) {
-    console.log('🔍 Vérification des champs requis dans l\'analyse:', analysis); // Log pour déboguer
+    console.log('🔍 Vérification des champs requis dans l\'analyse:', analysis);
     const requiredFields = ['type', 'client', 'produits', 'quantites'];
     const isValid = requiredFields.every(field => analysis[field] !== undefined && analysis[field] !== null);
-    console.log('✅ Résultat de la vérification des champs requis:', isValid); // Log du résultat
+    console.log('✅ Résultat de la vérification des champs requis:', isValid);
     return isValid;
   }
 
   // Méthode pour valider le stock
   validateStock(products) {
-    console.log('🔍 Validation du stock pour les produits:', products); // Log pour déboguer
-    // Exemple de logique de validation du stock
-    // Ici, on suppose que le stock est toujours suffisant
-    const isValid = true; // À remplacer par une logique réelle
-    console.log('✅ Résultat de la validation du stock:', isValid); // Log du résultat
+    console.log('🔍 Validation du stock pour les produits:', products);
+    const isValid = true;
+    console.log('✅ Résultat de la validation du stock:', isValid);
     return isValid;
   }
 
   // Méthode pour valider le client
   validateClient(client) {
-    console.log('🔍 Validation du client:', client); // Log pour déboguer
-    // Exemple de logique de validation du client
-    // Ici, on suppose que le client est toujours valide
-    const isValid = true; // À remplacer par une logique réelle
-    console.log('✅ Résultat de la validation du client:', isValid); // Log du résultat
+    console.log('🔍 Validation du client:', client);
+    const isValid = true;
+    console.log('✅ Résultat de la validation du client:', isValid);
     return isValid;
   }
 
@@ -72,77 +58,112 @@ class BusinessLogic {
   }
 
   async processMessage(message, userId) {
-    console.log('🔄 Début du traitement du message:', message); // Log du message reçu
-    console.log('🆔 User ID:', userId); // Log de l'ID utilisateur
+    console.log('🔄 Début du traitement du message:', message);
+    console.log('🆔 User ID:', userId);
 
     try {
-      // 1. Analyse du message via DeepSeek
       console.log('🔍 Analyse du message via DeepSeekService...');
       const analysis = await this.deepSeekService.processMessage(message, this.state.getState());
-      console.log('✅ Analyse réussie:', analysis); // Log du résultat de l'analyse
+      console.log('✅ Analyse réussie:', analysis);
 
-      // 2. Validation métier
       console.log('🔍 Validation métier...');
       if (!this.validateDeliveryRequest(analysis)) {
-        console.log('❌ Validation métier échouée'); // Log en cas d'échec de validation
+        console.log('❌ Validation métier échouée');
         return this.handleValidationError(analysis);
       }
-      console.log('✅ Validation métier réussie'); // Log en cas de succès de validation
+      console.log('✅ Validation métier réussie');
 
-      // 3. Exécution
       console.log('🚀 Exécution de la livraison...');
       const result = await this.executeDelivery(analysis);
-      console.log('✅ Livraison exécutée:', result); // Log du résultat de la livraison
+      console.log('✅ Livraison exécutée:', result);
 
-      // 4. Mise à jour état
       console.log('🔄 Mise à jour de l\'état...');
       this.state.updateState({
-        currentDelivery: result.delivery,
-        currentClient: result.client
+        current: {
+          delivery: result.data,
+          client: {
+            id: result.data.client,
+            name: result.data.clientName
+          }
+        }
       });
-      console.log('✅ État mis à jour:', this.state.getState()); // Log de l'état mis à jour
 
       return result;
     } catch (error) {
-      console.error('❌ Erreur lors du traitement du message:', error); // Log en cas d'erreur
+      console.error('❌ Erreur lors du traitement du message:', error);
       throw error;
     }
   }
 
   validateDeliveryRequest(analysis) {
-    if (analysis.type === 'general') {
-      return true; // General messages do not require further validation
+    if (Array.isArray(analysis) && analysis.length > 0) {
+      return analysis.every(order =>
+        order.client &&
+        order.products &&
+        Array.isArray(order.products) &&
+        order.products.length > 0
+      );
     }
-    return this.checkRequiredFields(analysis) && 
-           this.validateStock(analysis.products) &&
-           this.validateClient(analysis.client);
+
+    if (typeof analysis === 'string') {
+      return true;
+    }
+
+    return this.checkRequiredFields(analysis) &&
+      this.validateStock(analysis.products) &&
+      this.validateClient(analysis.client);
   }
 
   async executeDelivery(analysis) {
-    console.log('📝 Mise à jour de Google Sheets...');
     try {
-      // Assuming analysis.products is an array of products with their quantities
-      for (const product of analysis.products) {
+      const order = Array.isArray(analysis) ? analysis[0] : analysis;
+      let total = 0;
+  
+      const productInfo = await GoogleSheetsService.getRows('produits');
+      console.log('📦 Données produits récupérées:', productInfo);
+  
+      for (const product of order.products) {
+        const productData = productInfo.find(p => p.ID_Produit === product.productId);
+        if (!productData) {
+          console.warn(`❌ Produit non trouvé: ${product.productId}`);
+          continue;
+        }
+  
+        console.log('📊 Données produit trouvées:', productData);
+        const unitPrice = parseFloat(productData.Prix_Unitaire.replace(',', '.')) || 0;
+        const itemTotal = unitPrice * product.quantity;
+        total += itemTotal;
+  
+        console.log(`💰 Prix unitaire pour ${product.productId}: ${unitPrice}`);
+  
         await GoogleSheetsService.addRow('livraisons', {
-          ID_Livraison: analysis.deliveryId,
+          ID_Livraison: order.deliveryId,
           Date_Livraison: new Date().toISOString(),
-          ID_Client: analysis.clientId,
-          Produit: product.name,
+          ID_Client: order.client.id,
+          Produit: product.productId,
           Quantite: product.quantity,
+          Prix_Unitaire: unitPrice,
+          Total: itemTotal,
           Statut_L: 'Livrée'
         });
       }
-      console.log('✅ Google Sheets mis à jour avec succès'); // Log en cas de succès
+  
+      return {
+        status: 'success',
+        message: `Livraison ${order.deliveryId} créée pour ${order.client.name}\nTotal: ${total.toFixed(3)} TND`,
+        data: {
+          delivery: order.deliveryId,
+          client: order.client.id,
+          clientName: order.client.name,
+          products: order.products,
+          total
+        }
+      };
     } catch (error) {
-      console.error('❌ Erreur lors de la mise à jour de Google Sheets:', error); // Log en cas d'erreur
+      console.error('❌ Erreur GoogleSheets:', error);
       throw error;
     }
-
-    return {
-      delivery: analysis.deliveryId,
-      client: analysis.clientId
-    };
   }
 }
 
-module.exports = BusinessLogic; // Exporte la classe elle-même
+module.exports = BusinessLogic;

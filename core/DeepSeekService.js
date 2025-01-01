@@ -12,34 +12,30 @@ class DeepSeekService {
 
   async processMessage(message, context = {}) {
     console.log('🔍 Traitement du message via DeepSeek:', message);
-  
     try {
-      // Initialize clients and products data if not already done
-      if (!this.clientsService.clients || this.clientsService.clients.length === 0) {
-        await this.clientsService.initialize();
-      }
-      if (!this.productsService.products || this.productsService.products.length === 0) {
-        await this.productsService.initialize();
-      }
-  
-      // Parse the message using MessageParser
-      const parsedData = await this.messageParser.parseMessage(message);
-      console.log('✅ Réponse de DeepSeek:', parsedData);
-  
-      // Enrich parsed data with client and product details
-      const enrichedData = this.enrichParsedData(parsedData);
-  
-      // Respond based on the context
-      if (enrichedData.client) {
-        return this.handleClientContext(enrichedData);
-      } else {
+        // Garder l'initialisation
+        if (!this.clientsService.clients?.length) {
+            await this.clientsService.initialize();
+        }
+        if (!this.productsService.products?.length) {
+            await this.productsService.initialize();
+        }
+
+        const parsedData = await this.messageParser.parseMessage(message);
+        if (parsedData?.length > 0) {
+            // Enrichir chaque ordre de livraison
+            return parsedData.map(order => ({
+                ...order,
+                type: 'delivery',
+                deliveryId: this.generateDeliveryId()
+            }));
+        }
         return this.handleGeneralMessage(message);
-      }
     } catch (error) {
-      console.error('❌ Erreur lors du traitement du message:', error);
-      throw error;
+        console.error('❌ Erreur traitement:', error);
+        throw error;
     }
-  }
+}
   
   enrichParsedData(parsedData) {
     const enrichedData = {

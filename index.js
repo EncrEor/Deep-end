@@ -14,8 +14,21 @@ const app = express();
 const port = process.env.PORT || 3000;
 
 // Middleware
-app.use(cors());
+app.use(cors({
+  origin: '*',
+  methods: 'GET,HEAD,PUT,PATCH,POST,DELETE',
+  credentials: true,
+  optionsSuccessStatus: 204
+}));
 app.use(express.json());
+
+app.use((req, res, next) => {
+  res.header('Connection', 'keep-alive');
+  res.header('Access-Control-Allow-Origin', '*');
+  res.header('Access-Control-Allow-Headers', 'content-type');
+  next();
+});
+
 
 // Initialize BusinessLogic
 const initializeApp = async () => {
@@ -28,17 +41,18 @@ const initializeApp = async () => {
 initializeApp().then((businessLogic) => {
   // API endpoint for processing messages
   app.post('/api/chat', async (req, res) => {
-    console.log('📥 Requête reçue:', req.body); // Log the received request
-    const { message, userId } = req.body;
-
     try {
-      // Process the message using BusinessLogic
-      const result = await businessLogic.processMessage(message, userId);
-      console.log('✅ Réponse envoyée:', result); // Log the response
-      res.status(200).json({ data: result });
+      const result = await businessLogic.processMessage(req.body.message, req.body.userId);
+      res.json({
+        success: true,
+        message: result.message,
+        data: result
+      });
     } catch (error) {
-      console.error('❌ Erreur lors du traitement de la requête:', error); // Log the error
-      res.status(500).json({ error: error.message });
+      res.status(500).json({
+        success: false,
+        message: error.message
+      });
     }
   });
 
