@@ -51,8 +51,9 @@ class BusinessLogic {
 
   // Méthode pour gérer les erreurs de validation
   handleValidationError(analysis) {
-    console.error('❌ Erreur de validation:', analysis); // Log en cas d'erreur
-    throw new Error('Erreur de validation');
+    const errorDetails = `Validation failed for analysis: ${JSON.stringify(analysis)}`;
+    console.error('❌ Erreur de validation:', errorDetails);
+    throw new Error(errorDetails);
   }
 
   async processMessage(message, userId) {
@@ -94,12 +95,12 @@ class BusinessLogic {
   }
 
   validateDeliveryRequest(analysis) {
-    console.log('🔍 Validation des champs requis...');
-    const isValid = this.checkRequiredFields(analysis) && 
-                    this.validateStock(analysis.products) &&
-                    this.validateClient(analysis.client);
-    console.log('✅ Résultat de la validation:', isValid); // Log du résultat de la validation
-    return isValid;
+    if (analysis.type === 'general') {
+      return true; // General messages do not require further validation
+    }
+    return this.checkRequiredFields(analysis) && 
+           this.validateStock(analysis.products) &&
+           this.validateClient(analysis.client);
   }
 
   async executeDelivery(analysis) {

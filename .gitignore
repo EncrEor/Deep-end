@@ -5,3 +5,4 @@ node_modules/
 *.log
 joy_service_account.json.env
 .env
+joy_service_account.json

@@ -46,6 +46,7 @@ class GoogleSheetsService {
         spreadsheetId: this.spreadsheetId,
         range: `${sheetName}!A:Z`, // Use a valid range (e.g., all columns from A to Z)
       });
+      console.log('📄 Réponse de l\'API Google Sheets:', response.data); // Log the API response
       return response.data.values || [];
     } catch (error) {
       console.error(`❌ Erreur lors de la récupération des lignes de la feuille "${sheetName}":`, error);

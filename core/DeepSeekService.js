@@ -12,23 +12,23 @@ class DeepSeekService {
 
   async processMessage(message, context = {}) {
     console.log('🔍 Traitement du message via DeepSeek:', message);
-
+  
     try {
       // Initialize clients and products data if not already done
-      if (!this.clientsService.clients.length) {
+      if (!this.clientsService.clients || this.clientsService.clients.length === 0) {
         await this.clientsService.initialize();
       }
-      if (!this.productsService.products.length) {
+      if (!this.productsService.products || this.productsService.products.length === 0) {
         await this.productsService.initialize();
       }
-
+  
       // Parse the message using MessageParser
       const parsedData = await this.messageParser.parseMessage(message);
       console.log('✅ Réponse de DeepSeek:', parsedData);
-
+  
       // Enrich parsed data with client and product details
       const enrichedData = this.enrichParsedData(parsedData);
-
+  
       // Respond based on the context
       if (enrichedData.client) {
         return this.handleClientContext(enrichedData);
@@ -40,7 +40,7 @@ class DeepSeekService {
       throw error;
     }
   }
-
+  
   enrichParsedData(parsedData) {
     const enrichedData = {
       type: parsedData.type || 'general',
@@ -50,17 +50,12 @@ class DeepSeekService {
       deliveryId: parsedData.deliveryId || this.generateDeliveryId(),
       total: 0
     };
-
-    // Enrich client information
+  
     if (parsedData.client) {
-      const client = this.clientsService.getClientByAbbreviation(parsedData.client);
-      if (client) {
-        enrichedData.client = client.name;
-        enrichedData.clientId = client.id;
-      }
+      enrichedData.client = parsedData.client.name;
+      enrichedData.clientId = parsedData.client.id;
     }
-
-    // Enrich product information
+  
     if (parsedData.products && parsedData.products.length) {
       for (const product of parsedData.products) {
         const productDetails = this.productsService.getProductByAbbreviation(product.name);
@@ -71,7 +66,7 @@ class DeepSeekService {
         }
       }
     }
-
+  
     return enrichedData;
   }
 
@@ -86,7 +81,8 @@ class DeepSeekService {
 
   handleGeneralMessage(message) {
     console.log('🔍 Message général détecté:', message);
-    return `Je ne reconnais pas de contexte de livraison. Pouvez-vous fournir plus de détails ? Message reçu: "${message}"`;
+    // Provide a meaningful response without throwing an error
+    return `Message reçu: "${message}". Veuillez fournir des détails de livraison si nécessaire.`;
   }
 
   generateDeliveryId() {

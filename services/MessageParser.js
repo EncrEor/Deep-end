@@ -11,50 +11,58 @@ class MessageParser {
     const lines = message.split('\n');
     const orders = [];
     let currentClient = null;
-    let context = 'order';
-    let i = 0;
-
-    while (i < lines.length) {
-      const line = lines[i].trim();
-      if (!line) {
-        i++;
+  
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+      if (!trimmedLine) continue;
+  
+      if (this.isClientLine(trimmedLine)) {
+        currentClient = this.getClient(trimmedLine);
         continue;
       }
-
-      if (this.isClientLine(line)) {
-        currentClient = this.getClient(line);
-        if (!currentClient) {
-          // Handle unknown client
-        }
-        i++;
-      } else if (line.toLowerCase().includes('retour')) {
-        context = 'return';
-        const parts = line.split(' ');
-        if (parts.length > 1) {
-          currentClient = this.getClient(parts.slice(1).join(' '));
-        }
-        i++;
-      } else {
-        const quantities = line.split(' ').map(Number);
-        if (quantities.every(q => !isNaN(q))) {
-          // Handle quantity lines based on context and default format
-        } else {
-          // Handle product abbreviation lines
-        }
-        i++;
+  
+      // Assume the rest are product quantities
+      const quantities = trimmedLine.split(' ').map(Number);
+      if (quantities.every(q => !isNaN(q)) && currentClient) {
+        // Map quantities to products based on default format or other rules
+        // Example: assuming the first quantity is for 'citron 1L', etc.
+        const products = [];
+        quantities.forEach((qty, index) => {
+          const product = this.productsService.products.find(p => p.defaultPosition === index + 1);
+          if (product && qty > 0) {
+            products.push({ product, quantity: qty });
+          }
+        });
+        orders.push({ client: currentClient, products });
       }
     }
-
+  
     return orders;
   }
 
   isClientLine(line) {
-    // Logic to determine if line is a client name or abbreviation
+    if (!line || typeof line !== 'string') {
+      return false; // Return false if the line is not a valid string
+    }
+
+    // Ensure clientsService.clients is initialized and not empty
+    if (!this.clientsService.clients || this.clientsService.clients.length === 0) {
+      return false; // Return false if there are no clients
+    }
+
+    // Check if the line matches any client name or abbreviation
+    return this.clientsService.clients.some(client => {
+      if (!client || !client.name || !client.abbreviation) {
+        return false; // Skip invalid client entries
+      }
+      return client.abbreviation === line || client.name.toLowerCase() === line.toLowerCase();
+    });
   }
 
   getClient(line) {
-    // Logic to find client based on line
+    return this.clientsService.clients.find(client => client.abbreviation === line || client.name.toLowerCase() === line.toLowerCase());
   }
+
 }
 
 module.exports = new MessageParser();
